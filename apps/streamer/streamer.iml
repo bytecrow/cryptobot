@@ -21,5 +21,6 @@
     <orderEntry type="library" name="cowboy" level="project" />
     <orderEntry type="library" name="plug" level="project" />
     <orderEntry type="library" name="jason" level="project" />
+    <orderEntry type="library" name="phoenix_pubsub" level="project" />
   </component>
 </module>
