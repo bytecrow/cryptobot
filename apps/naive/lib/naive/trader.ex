@@ -7,8 +7,8 @@ defmodule Naive.Trader do
   @binance_client Application.compile_env(:naive, :binance_client)
 
   defmodule State do
-    @enforce_keys [:symbol, :profit_interval, :tick_size]
-    defstruct [:symbol, :buy_order, :sell_order, :profit_interval, :tick_size]
+    @enforce_keys [:symbol, :buy_down_interval, :profit_interval, :tick_size]
+    defstruct [:symbol, :buy_order, :sell_order, :buy_down_interval, :profit_interval, :tick_size]
   end
 
   def start_link(%State{} = state) do
@@ -28,8 +28,17 @@ defmodule Naive.Trader do
     {:ok, state}
   end
 
-  def handle_info(%TradeEvent{price: price}, %State{symbol: symbol, buy_order: nil} = state) do
+  def handle_info(
+        %TradeEvent{price: price},
+        %State{
+          symbol: symbol,
+          buy_order: nil,
+          buy_down_interval: buy_down_interval,
+          tick_size: tick_size
+        } = state
+      ) do
     quantity = "100"
+    price = calculate_buy_price(price, buy_down_interval, tick_size)
 
     Logger.info("Placing BUY order for #{symbol} @ #{price}, quantity: #{quantity}")
 
@@ -93,14 +102,21 @@ defmodule Naive.Trader do
     {:noreply, state}
   end
 
-  defp fetch_tick_size(symbol) do
-    @binance_client.get_exchange_info()
-    |> elem(1)
-    |> Map.get(:symbols)
-    |> Enum.find(&(&1["symbol"] == symbol))
-    |> Map.get("filters")
-    |> Enum.find(&(&1["filterType"] == "PRICE_FILTER"))
-    |> Map.get("tickSize")
+  defp calculate_buy_price(current_price, buy_down_interval, tick_size) do
+    # not necessarily legal price
+    exact_buy_price =
+      D.sub(
+        current_price,
+        D.mult(current_price, buy_down_interval)
+      )
+
+    D.to_string(
+      D.mult(
+        D.div_int(exact_buy_price, tick_size),
+        tick_size
+      ),
+      :normal
+    )
   end
 
   defp calculate_sell_price(buy_price, profit_interval, tick_size) do
