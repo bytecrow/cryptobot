@@ -1,6 +1,7 @@
 defmodule Streamer.Binance do
-  require Logger
   use WebSockex
+
+  require Logger
 
   @stream_endpoint "wss://stream.binance.com:9443/ws/"
 
@@ -20,7 +21,6 @@ defmodule Streamer.Binance do
       {:error, _} -> Logger.error("Unable to parse msg: #{msg}")
     end
 
-    # IO.puts "Received Message - Type: #{inspect type} -- Message: #{inspect msg}"
     {:ok, state}
   end
 
@@ -38,7 +38,10 @@ defmodule Streamer.Binance do
       :buyer_market_maker => event["m"]
     }
 
-    Logger.debug("Trade event received #{trade_event.symbol}@#{trade_event.price}")
+    Logger.debug(
+      "Trade event received " <>
+        "#{trade_event.symbol}@#{trade_event.price}"
+    )
 
     Phoenix.PubSub.broadcast(
       Streamer.PubSub,

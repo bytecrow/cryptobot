@@ -9,11 +9,15 @@ defmodule Naive.Leader do
   @binance_client Application.compile_env(:naive, :binance_client)
 
   defmodule State do
-    defstruct symbol: nil, settings: nil, traders: []
+    defstruct symbol: nil,
+              settings: nil,
+              traders: []
   end
 
   defmodule TraderData do
-    defstruct pid: nil, ref: nil, state: nil
+    defstruct pid: nil,
+              ref: nil,
+              state: nil
   end
 
   def start_link(symbol) do
@@ -41,7 +45,10 @@ defmodule Naive.Leader do
   def handle_continue(:start_traders, %{symbol: symbol} = state) do
     settings = fetch_symbol_settings(symbol)
     trader_state = fresh_trader_state(settings)
-    traders = for _i <- 1..settings.chunks, do: start_new_trader(trader_state)
+
+    traders =
+      for _i <- 1..settings.chunks,
+          do: start_new_trader(trader_state)
 
     {:noreply, %{state | settings: settings, traders: traders}}
   end
@@ -112,19 +119,10 @@ defmodule Naive.Leader do
   end
 
   defp fresh_trader_state(settings) do
-    %{struct(Trader.State, settings) | budget: D.div(settings.budget, settings.chunks)}
-  end
-
-  defp start_new_trader(%Trader.State{} = state) do
-    {:ok, pid} =
-      DynamicSupervisor.start_child(
-        :"Naive.DynamicTraderSupervisor-#{state.symbol}",
-        {Naive.Trader, state}
-      )
-
-    ref = Process.monitor(pid)
-
-    %TraderData{pid: pid, ref: ref, state: state}
+    %{
+      struct(Trader.State, settings)
+      | budget: D.div(settings.budget, settings.chunks)
+    }
   end
 
   defp fetch_symbol_settings(symbol) do
@@ -166,5 +164,17 @@ defmodule Naive.Leader do
       tick_size: tick_size,
       step_size: step_size
     }
+  end
+
+  defp start_new_trader(%Trader.State{} = state) do
+    {:ok, pid} =
+      DynamicSupervisor.start_child(
+        :"Naive.DynamicTraderSupervisor-#{state.symbol}",
+        {Naive.Trader, state}
+      )
+
+    ref = Process.monitor(pid)
+
+    %TraderData{pid: pid, ref: ref, state: state}
   end
 end
