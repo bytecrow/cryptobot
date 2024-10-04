@@ -43,6 +43,15 @@ config :streamer, Streamer.Repo,
   password: "hedgehogSecretPassword",
   hostname: "localhost"
 
+config :data_warehouse,
+  ecto_repos: [DataWarehouse.Repo]
+
+config :data_warehouse, DataWarehouse.Repo,
+  database: "data_warehouse",
+  username: "postgres",
+  password: "hedgehogSecretPassword",
+  hostname: "localhost"
+
 config :logger,
   level: :info
 
