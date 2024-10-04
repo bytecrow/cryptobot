@@ -20,4 +20,8 @@ defmodule DataWarehouse do
     |> Enum.map(&String.upcase/1)
     |> Enum.join(":")
   end
+
+  def publish_data(args) do
+    DataWarehouse.Publisher.start_link(args)
+  end
 end
