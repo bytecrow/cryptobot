@@ -9,12 +9,6 @@
 # move said applications out of the umbrella.
 import Config
 
-config :streamer, Streamer.Repo,
-  database: "streamer_repo",
-  username: "user",
-  password: "pass",
-  hostname: "localhost"
-
 config :naive,
   ecto_repos: [Naive.Repo],
   binance_client: BinanceMock,
@@ -35,6 +29,7 @@ config :naive, Naive.Repo,
   hostname: "localhost"
 
 config :streamer,
+  binance_client: BinanceMock,
   ecto_repos: [Streamer.Repo]
 
 config :streamer, Streamer.Repo,
@@ -52,6 +47,9 @@ config :data_warehouse, DataWarehouse.Repo,
   password: "hedgehogSecretPassword",
   hostname: "localhost"
 
+config :binance_mock,
+  use_cached_exchange_info: false
+
 config :logger,
   level: :info
 
@@ -59,10 +57,4 @@ if File.exists?("config/secrets.exs") do
   import_config("secrets.exs")
 end
 
-# Sample configuration:
-#
-#     config :logger, :console,
-#       level: :info,
-#       format: "$date $time [$level] $metadata$message\n",
-#       metadata: [:user_id]
-#
+import_config "#{config_env()}.exs"
