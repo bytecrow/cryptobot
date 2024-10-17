@@ -1,10 +1,46 @@
 defmodule BinanceMock do
   use GenServer
 
+  require Logger
+
   alias Decimal, as: D
   alias Core.Struct.TradeEvent
 
-  require Logger
+  alias Binance.Order
+  alias Binance.OrderResponse
+  alias Core.Struct.TradeEvent
+
+  @type symbol :: binary
+  @type quantity :: binary
+  @type price :: binary
+  @type time_in_force :: binary
+  @type timestamp :: non_neg_integer
+  @type order_id :: non_neg_integer
+  @type orig_client_order_id :: binary
+  @type recv_window :: binary
+
+  @callback order_limit_buy(
+              symbol,
+              quantity,
+              price,
+              time_in_force
+            ) :: {:ok, %OrderResponse{}} | {:error, term}
+
+  @callback order_limit_sell(
+              symbol,
+              quantity,
+              price,
+              time_in_force
+            ) :: {:ok, %OrderResponse{}} | {:error, term}
+
+  @callback get_order(
+              symbol,
+              timestamp,
+              order_id,
+              orig_client_order_id | nil,
+              recv_window | nil
+            ) :: {:ok, %Order{}} | {:error, term}
+
 
   defmodule State do
     defstruct order_books: %{}, subscriptions: [], fake_order_id: 1
@@ -151,6 +187,7 @@ defmodule BinanceMock do
     %Binance.Order{} =
       fake_order =
       generate_fake_order(
+        GenServer.call(__MODULE__, :generate_id),
         symbol,
         quantity,
         price,
@@ -216,13 +253,12 @@ defmodule BinanceMock do
     Map.put(order_books, :"#{symbol}", order_book)
   end
 
-  defp generate_fake_order(symbol, quantity, price, side)
+  def generate_fake_order(order_id, symbol, quantity, price, side)
        when is_binary(symbol) and
               is_binary(quantity) and
               is_binary(price) and
               (side == "BUY" or side == "SELL") do
     current_timestamp = :os.system_time(:millisecond)
-    order_id = GenServer.call(__MODULE__, :generate_id)
     client_order_id = :crypto.hash(:md5, "#{order_id}") |> Base.encode16()
 
     Binance.Order.new(%{
@@ -245,7 +281,7 @@ defmodule BinanceMock do
     })
   end
 
-  defp convert_order_to_order_response(%Binance.Order{} = order) do
+  def convert_order_to_order_response(%Binance.Order{} = order) do
     %{
       struct(
         Binance.OrderResponse,
